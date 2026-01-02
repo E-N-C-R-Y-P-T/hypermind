@@ -182,7 +182,6 @@ console.log(
 let mySeq = 0;
 
 const seenPeers = new Map();
-const MAX_PEERS = 1000; // Reduced from 10000 for memory efficiency
 
 const sseClients = new Set();
 
@@ -276,15 +275,16 @@ function handleMessage(msg, sourceSocket) {
     // 3. Verify Signature
     if (!sig) return;
     try {
-      // Get or create the raw DER buffer (lightweight storage)
-      const keyDer = stored?.keyDer || Buffer.from(id, "hex");
-      
-      // Parse KeyObject on-demand for verification only (not stored)
-      const key = crypto.createPublicKey({
-        key: keyDer,
-        format: "der",
-        type: "spki",
-      });
+      let key;
+      if (stored && stored.key) {
+        key = stored.key;
+      } else {
+        key = crypto.createPublicKey({
+          key: Buffer.from(id, "hex"),
+          format: "der",
+          type: "spki",
+        });
+      }
 
       const verified = crypto.verify(
         null,
